@@ -1,2 +1,28 @@
 ---
+- name: Add zrepl apt key
+  apt_key:
+    url: https://zrepl.cschwarz.com/apt/apt-key.asc
+    state: present
 
+- name: Add zrepl apt repository
+  apt_repository:
+    repo: deb https://zrepl.cschwarz.com/apt/debian {{ansible_distribution_release}} main
+
+# - name: Install zrepl
+#   apt:
+#     name: zrepl
+#     state: present
+#     update_cache: true
+
+- name: Create zrepl config directory
+  file:
+    path: /etc/zrepl
+    state: directory
+
+- name: Place zrepl config file
+  template:
+    src: zrepl.yml.j2
+    dest: /etc/zrepl/zrepl.yml
+
+- name: Validate zrepl config
+  command: zrepl configcheck

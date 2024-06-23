@@ -1,0 +1,23 @@
+jobs:
+- name: snapjob
+  type: snap
+  filesystems: {
+    {% for fs in zfs_filesystems | union(zvols) | default({}) %}
+      {%- if (fs.snapshots is defined and fs.snapshots.snapshot is defined) or ( zfs_snapshot_default_snapshot is defined) %}
+        {{ '\n    ' }}"{{ fs.name }}<": {{ fs.snapshots.snapshot }}
+      {%- endif %}
+    {% endfor %}
+  }
+  snapshotting:
+    type: periodic
+    interval: 10m
+    prefix: zrepl_
+    hooks:
+    - type: command
+      path: /etc/zrepl/hooks/zrepl-notify.sh
+      timeout: 30s
+  pruning:
+    keep:
+      - type: grid
+        grid: 1x1d(keep=all) | 336x1h | 90x1d | 6x30d
+        regex: ^(?!zrepl_).*

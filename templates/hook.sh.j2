@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -e
+
+[ "$ZREPL_DRYRUN" = "true" ] && exit 0
+
+pre_snapshot() {
+    exit 0
+}
+
+post_snapshot() {
+    zfs hold kopia $ZREPL_FS@$ZREPL_SNAPNAME
+    mkdir -p /mnt/kopia_$ZREPL_FS\_$ZREPL_SNAPNAME
+    mount -t zfs $ZREPL_FS@$ZREPL_SNAPNAME /mnt/kopia_$ZREPL_FS\_$ZREPL_SNAPNAME
+    $(kopia snapshot create --todo-args && zfs release kopia $ZREPL_FS@$ZREPL_SNAPNAME ; umount /mnt/kopia_$ZREPL_FS\_$ZREPL_SNAPNAME ; rmdir /mnt/kopia_$ZREPL_FS\_$ZREPL_SNAPNAME) &
+}
+
+case "$ZREPL_HOOKTYPE" in
+    pre_snapshot|post_snapshot)
+        "$ZREPL_HOOKTYPE"
+        ;;
+    *)
+        printf 'Unrecognized hook type: %s\n' "$ZREPL_HOOKTYPE"
+        exit 255
+        ;;
+esac
+
