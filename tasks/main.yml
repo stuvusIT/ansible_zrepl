@@ -8,11 +8,11 @@
   apt_repository:
     repo: deb https://zrepl.cschwarz.com/apt/debian {{ansible_distribution_release}} main
 
-# - name: Install zrepl
-#   apt:
-#     name: zrepl
-#     state: present
-#     update_cache: true
+- name: Install zrepl
+  apt:
+    name: zrepl
+    state: present
+    update_cache: true
 
 - name: Create zrepl config directory
   file:
@@ -26,3 +26,27 @@
 
 - name: Validate zrepl config
   command: zrepl configcheck
+
+- name: Place zrepl-notify
+  template:
+    src: zrepl-notify.sh.j2
+    dest: /usr/local/bin/zrepl-notify
+    mode: 0755
+
+- name: Place zrepl-kopia-uploader
+  template:
+    src: zrepl-kopia-uploader.sh.j2
+    dest: /usr/local/bin/zrepl-kopia-uploader
+    mode: 0755
+
+- name: Place zrepl-kopia-uploader systemd service
+  template:
+    src: zrepl-kopia-uploader.service.j2
+    dest: /etc/systemd/system/zrepl-kopia-uploader.service
+  notify: Reload systemd daemon
+
+- name: Place zrepl-kopia-uploader systemd timer
+  template:
+    src: zrepl-kopia-uploader.timer.j2
+    dest: /etc/systemd/system/zrepl-kopia-uploader.timer
+  notify: Reload systemd daemon

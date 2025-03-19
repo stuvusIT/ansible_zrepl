@@ -9,9 +9,10 @@ pre_snapshot() {
 
 post_snapshot() {
     zfs hold kopia $ZREPL_FS@$ZREPL_SNAPNAME
-    mkdir -p /mnt/kopia_$ZREPL_FS\_$ZREPL_SNAPNAME
-    mount -t zfs $ZREPL_FS@$ZREPL_SNAPNAME /mnt/kopia_$ZREPL_FS\_$ZREPL_SNAPNAME
-    $(kopia snapshot create --todo-args && zfs release kopia $ZREPL_FS@$ZREPL_SNAPNAME ; umount /mnt/kopia_$ZREPL_FS\_$ZREPL_SNAPNAME ; rmdir /mnt/kopia_$ZREPL_FS\_$ZREPL_SNAPNAME) &
+    if [ $? -ne 0 ]; then
+        echo "Failed to hold snapshot $ZREPL_FS@$ZREPL_SNAPNAME"
+        exit 1
+    fi
 }
 
 case "$ZREPL_HOOKTYPE" in
@@ -23,4 +24,3 @@ case "$ZREPL_HOOKTYPE" in
         exit 255
         ;;
 esac
-
