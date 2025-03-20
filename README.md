@@ -1,13 +1,10 @@
 # Role Name
 
-A brief description of the role goes here.
-
+This role installs and configures zrepl.
 
 ## Requirements
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here.
-For instance, if the role uses the EC2 module or depends on other Ansible roles, it may be a good idea to mention in this section that the boto package is required.
-
+This role should probably work on reasonably up to date Debian/Ubuntu systems, but we only tested it with Debian 12.
 
 ## Role Variables
 
@@ -16,27 +13,57 @@ Any variables that are read from other roles and/or the global scope (ie. hostva
 
 Don't forget to indent the markdown table so it is readable even if not rendered.
 
-| Name       | Required/Default         | Description                                                                                        |
-|------------|:------------------------:|----------------------------------------------------------------------------------------------------|
-| `example1` | :heavy_check_mark:       | Lorem ipsum dolor sit amet, consetetur sadipscing elitr,                                           |
-| `example2` | :heavy_multiplication_x: | Sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. |
-| `example3` | `True`                   | Stet clita kasd gubergren                                                                          |
-| `example4` | `5`                      | No sea takimata sanctus est Lorem ipsum dolor sit amet.                                            |
+| Name           |  Required/Default  | Description                                                                                           |
+| -------------- | :----------------: | ----------------------------------------------------------------------------------------------------- |
+| `zrepl_config` | :heavy_check_mark: | zrepl configuration. This variable will be serialized to YAML and written to `/etc/zrepl/zrepl.yaml`. |
 
+## Hold Snapshots
+
+This role also places a hook under `/opt/zrepl-hook-hold` that, when used, will add a ZFS hold named `zrepl` to newly created snapshots.
+This is useful if you want to then backup these snapshots using some backup tool such as [zfs-restic-uploader](https://github.com/stuvusIT/ansible_zfs_restic_uploader).
+In this case the backup tool is responsible for releasing the ZFS hold.
+When you configure pruning, zrepl can only prune snapshots on which the ZFS hold has been released.
+
+This role currently doesn't support deploying custom hooks, so if you need a hook that does something else, you need to deploy it via some other mechanism or create a PR on this role.
 
 ## Example
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
 ```yml
+- hosts: hypervisor01
+  become: true
+  roles:
+    - role: zrepl
+      zrepl_config:
+        global:
+          logging:
+            - type: stdout
+              level: warn
+              format: human
+        jobs:
+          - name: snapjob_s3
+            type: snap
+            filesystems:
+              /tank/dataset1
+              /tank/dataset2
+            snapshotting:
+              type: cron
+              cron: "0 2 * * *"
+              prefix: zrepl_s3_
+              timestamp_format: iso-8601
+              hooks:
+                - type: command
+                  path: /opt/zrepl-hook-hold
+                  timeout: 30s
+            pruning:
+              keep:
+                - type: grid
+                  grid: 1x30d(keep=all)
+                  regex: ^zrepl_s3_.*
+                - type: regex
+                  negate: true
+                  regex: ^zrepl_s3_.*
 ```
-
 
 ## License
 
 This work is licensed under the [MIT License](./LICENSE).
-
-
-## Author Information
-
-- [Author Name (nickname)](github profile) _givenname.familyname at stuvus.uni-stuttgart.de_
