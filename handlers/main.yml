@@ -1,4 +1,5 @@
----
-- name: Reload systemd daemon
-  systemd:
-    daemon_reload: True
+- name: Restart zrepl service
+  service:
+    name: zrepl
+    enabled: True
+    state: restarted

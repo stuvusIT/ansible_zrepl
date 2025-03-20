@@ -13,40 +13,47 @@
     name: zrepl
     state: present
     update_cache: true
+  notify:
+    - Restart zrepl service
 
 - name: Create zrepl config directory
   file:
     path: /etc/zrepl
     state: directory
 
-- name: Place zrepl config file
-  template:
-    src: zrepl.yml.j2
-    dest: /etc/zrepl/zrepl.yml
+- name: Upload zrepl config
+  copy:
+    content: "{{ zrepl_config | to_nice_yaml(indent=2) }}"
+    dest: /etc/zrepl/zrepl.yml.tmp
+  changed_when: False
 
 - name: Validate zrepl config
-  command: zrepl configcheck
+  command: zrepl configcheck --config /etc/zrepl/zrepl.yml.tmp
+  changed_when: False
 
-- name: Place zrepl-notify
-  template:
-    src: zrepl-notify.sh.j2
-    dest: /usr/local/bin/zrepl-notify
+- name: Activate zrepl config
+  shell: |
+    if diff -q /etc/zrepl/zrepl.yml.tmp /etc/zrepl/zrepl.yml; then
+      rm /etc/zrepl/zrepl.yml.tmp
+    else
+      echo CHANGED
+      mv -f /etc/zrepl/zrepl.yml.tmp /etc/zrepl/zrepl.yml
+    fi
+  register: out
+  changed_when: "'CHANGED' in out.stdout | default('')"
+  notify:
+    - Restart zrepl service
+
+- name: Place zrepl-hook-hold
+  copy:
+    src: zrepl-hook-hold
+    dest: /opt/zrepl-hook-hold
     mode: 0755
 
-- name: Place zrepl-kopia-uploader
-  template:
-    src: zrepl-kopia-uploader.sh.j2
-    dest: /usr/local/bin/zrepl-kopia-uploader
-    mode: 0755
+- meta: flush_handlers
 
-- name: Place zrepl-kopia-uploader systemd service
-  template:
-    src: zrepl-kopia-uploader.service.j2
-    dest: /etc/systemd/system/zrepl-kopia-uploader.service
-  notify: Reload systemd daemon
-
-- name: Place zrepl-kopia-uploader systemd timer
-  template:
-    src: zrepl-kopia-uploader.timer.j2
-    dest: /etc/systemd/system/zrepl-kopia-uploader.timer
-  notify: Reload systemd daemon
+- name: Enable zrepl service
+  service:
+    name: zrepl
+    enabled: True
+    state: started

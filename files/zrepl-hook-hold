@@ -8,9 +8,9 @@ pre_snapshot() {
 }
 
 post_snapshot() {
-    zfs hold kopia $ZREPL_FS@$ZREPL_SNAPNAME
+    zfs hold zrepl "$ZREPL_FS@$ZREPL_SNAPNAME"
     if [ $? -ne 0 ]; then
-        echo "Failed to hold snapshot $ZREPL_FS@$ZREPL_SNAPNAME"
+        >&2 echo "Failed to hold snapshot $ZREPL_FS@$ZREPL_SNAPNAME"
         exit 1
     fi
 }
@@ -20,7 +20,7 @@ case "$ZREPL_HOOKTYPE" in
         "$ZREPL_HOOKTYPE"
         ;;
     *)
-        printf 'Unrecognized hook type: %s\n' "$ZREPL_HOOKTYPE"
+        >&2 echo "Unrecognized hook type: $ZREPL_HOOKTYPE"
         exit 255
         ;;
 esac
