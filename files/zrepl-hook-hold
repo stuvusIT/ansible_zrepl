@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -e
+
+[ "$ZREPL_DRYRUN" = "true" ] && exit 0
+
+pre_snapshot() {
+    exit 0
+}
+
+post_snapshot() {
+    zfs hold zrepl "$ZREPL_FS@$ZREPL_SNAPNAME"
+    if [ $? -ne 0 ]; then
+        >&2 echo "Failed to hold snapshot $ZREPL_FS@$ZREPL_SNAPNAME"
+        exit 1
+    fi
+}
+
+case "$ZREPL_HOOKTYPE" in
+    pre_snapshot|post_snapshot)
+        "$ZREPL_HOOKTYPE"
+        ;;
+    *)
+        >&2 echo "Unrecognized hook type: $ZREPL_HOOKTYPE"
+        exit 255
+        ;;
+esac

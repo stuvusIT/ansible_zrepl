@@ -1,2 +1,59 @@
 ---
+- name: Add zrepl apt key
+  apt_key:
+    url: https://zrepl.cschwarz.com/apt/apt-key.asc
+    state: present
 
+- name: Add zrepl apt repository
+  apt_repository:
+    repo: deb https://zrepl.cschwarz.com/apt/debian {{ansible_distribution_release}} main
+
+- name: Install zrepl
+  apt:
+    name: zrepl
+    state: present
+    update_cache: true
+  notify:
+    - Restart zrepl service
+
+- name: Create zrepl config directory
+  file:
+    path: /etc/zrepl
+    state: directory
+
+- name: Upload zrepl config
+  copy:
+    content: "{{ zrepl_config | to_nice_yaml(indent=2) }}"
+    dest: /etc/zrepl/zrepl.yml.tmp
+  changed_when: False
+
+- name: Validate zrepl config
+  command: zrepl configcheck --config /etc/zrepl/zrepl.yml.tmp
+  changed_when: False
+
+- name: Activate zrepl config
+  shell: |
+    if diff -q /etc/zrepl/zrepl.yml.tmp /etc/zrepl/zrepl.yml; then
+      rm /etc/zrepl/zrepl.yml.tmp
+    else
+      echo CHANGED
+      mv -f /etc/zrepl/zrepl.yml.tmp /etc/zrepl/zrepl.yml
+    fi
+  register: out
+  changed_when: "'CHANGED' in out.stdout | default('')"
+  notify:
+    - Restart zrepl service
+
+- name: Place zrepl-hook-hold
+  copy:
+    src: zrepl-hook-hold
+    dest: /opt/zrepl-hook-hold
+    mode: 0755
+
+- meta: flush_handlers
+
+- name: Enable zrepl service
+  service:
+    name: zrepl
+    enabled: True
+    state: started

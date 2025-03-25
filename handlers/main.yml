@@ -1,0 +1,5 @@
+- name: Restart zrepl service
+  service:
+    name: zrepl
+    enabled: True
+    state: restarted
