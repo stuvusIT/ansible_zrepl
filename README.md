@@ -1,4 +1,4 @@
-# Role Name
+# zrepl Ansible Role
 
 This role installs and configures zrepl.
 
