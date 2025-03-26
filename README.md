@@ -13,9 +13,9 @@ Any variables that are read from other roles and/or the global scope (ie. hostva
 
 Don't forget to indent the markdown table so it is readable even if not rendered.
 
-| Name           |  Required/Default  | Description                                                                                           |
-| -------------- | :----------------: | ----------------------------------------------------------------------------------------------------- |
-| `zrepl_config` | :heavy_check_mark: | zrepl configuration. This variable will be serialized to YAML and written to `/etc/zrepl/zrepl.yaml`. |
+| Name           |  Required/Default  | Description                                                                                          |
+| -------------- | :----------------: | ---------------------------------------------------------------------------------------------------- |
+| `zrepl_config` | :heavy_check_mark: | zrepl configuration. This variable will be serialized to YAML and written to `/etc/zrepl/zrepl.yml`. |
 
 ## Hold Snapshots
 
